@@ -1,0 +1,44 @@
+@import "tailwindcss";
+
+@theme {
+  --color-primary-50: #eff6ff;
+  --color-primary-100: #dbeafe;
+  --color-primary-200: #bfdbfe;
+  --color-primary-300: #93c5fd;
+  --color-primary-400: #60a5fa;
+  --color-primary-500: #3b82f6;
+  --color-primary-600: #2563eb;
+  --color-primary-700: #1d4ed8;
+  --color-primary-800: #1e40af;
+  --color-primary-900: #1e3a8a;
+}
+
+body {
+  @apply bg-slate-50 text-slate-900 font-sans antialiased;
+}
+
+.blue-gradient {
+  @apply bg-gradient-to-r from-primary-600 to-primary-400 text-white;
+}
+
+.blue-gradient-text {
+  @apply bg-gradient-to-r from-primary-600 to-primary-400 bg-clip-text text-transparent;
+}
+
+.btn-primary {
+  @apply bg-gradient-to-r from-primary-600 to-primary-400 text-white px-4 py-2 rounded-lg font-medium shadow-md hover:shadow-lg transition-transform transform hover:-translate-y-0.5 active:scale-95;
+}
+
+.card {
+  @apply bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden hover:shadow-md transition-shadow;
+}
+
+/* Modal animation */
+@keyframes fadeIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.2s ease-out forwards;
+}
