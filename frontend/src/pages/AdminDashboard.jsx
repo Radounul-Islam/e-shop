@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import axios from "axios";
+import api from "../api/api";
 import { useAuth } from "../context/AuthContext";
 import {
   ShieldAlert,
@@ -66,8 +66,7 @@ const AdminDashboard = () => {
   const handleAdminLogin = async (e) => {
     e.preventDefault();
     try {
-      const res = await axios.post(
-        "http://localhost:5000/api/auth/admin-login",
+      const res = await api.post("/auth/admin-login",
         { email: adminEmail, password: adminPass },
       );
       login(res.data);
@@ -83,18 +82,18 @@ const AdminDashboard = () => {
   const fetchAdminData = async () => {
     try {
       if (activeTab === "categories") {
-        const res = await axios.get(
-          "http://localhost:5000/api/products/categories/all",
+        const res = await api.get(
+          "/products/categories/all",
         );
         setData((p) => ({ ...p, categories: res.data }));
       } else if (activeTab === "products") {
-        const res = await axios.get("http://localhost:5000/api/products");
+        const res = await api.get("/products");
         setData((p) => ({ ...p, products: res.data }));
       } else if (activeTab === "orders") {
-        const res = await axios.get("http://localhost:5000/api/admin/orders");
+        const res = await api.get("/admin/orders");
         setData((p) => ({ ...p, orders: res.data }));
       } else if (activeTab === "banners") {
-        const res = await axios.get("http://localhost:5000/api/admin/banners");
+        const res = await api.get("/admin/banners");
         setData((p) => ({ ...p, banners: res.data }));
       }
     } catch (err) {
@@ -107,13 +106,13 @@ const AdminDashboard = () => {
     e.preventDefault();
     try {
       if (editingProduct) {
-        await axios.put(
-          `http://localhost:5000/api/admin/products/${editingProduct.id}`,
+        await api.put(
+          `/admin/products/${editingProduct.id}`,
           productForm,
         );
       } else {
-        await axios.post(
-          "http://localhost:5000/api/admin/products",
+        await api.post(
+          "/admin/products",
           productForm,
         );
       }
@@ -128,7 +127,7 @@ const AdminDashboard = () => {
     if (!window.confirm("Are you sure you want to delete this product?"))
       return;
     try {
-      await axios.delete(`http://localhost:5000/api/admin/products/${id}`);
+      await api.delete(`/admin/products/${id}`);
       fetchAdminData();
     } catch (e) {
       console.error(e);
@@ -170,13 +169,13 @@ const AdminDashboard = () => {
     e.preventDefault();
     try {
       if (editingCategory) {
-        await axios.put(
-          `http://localhost:5000/api/admin/categories/${editingCategory.id}`,
+        await api.put(
+          `/admin/categories/${editingCategory.id}`,
           categoryForm,
         );
       } else {
-        await axios.post(
-          "http://localhost:5000/api/admin/categories",
+        await api.post(
+          "/admin/categories",
           categoryForm,
         );
       }
@@ -195,7 +194,7 @@ const AdminDashboard = () => {
     )
       return;
     try {
-      await axios.delete(`http://localhost:5000/api/admin/categories/${id}`);
+      await api.delete(`/admin/categories/${id}`);
       fetchAdminData();
     } catch (e) {
       console.error(e);
@@ -217,7 +216,7 @@ const AdminDashboard = () => {
   // --- Order Status & details ---
   const changeOrderStatus = async (id, status) => {
     try {
-      await axios.patch(`http://localhost:5000/api/admin/orders/${id}/status`, {
+      await api.patch(`/admin/orders/${id}/status`, {
         status,
       });
       fetchAdminData();
@@ -230,7 +229,7 @@ const AdminDashboard = () => {
     if (!window.confirm("Are you sure you want to delete this order entirely?"))
       return;
     try {
-      await axios.delete(`http://localhost:5000/api/admin/orders/${id}`);
+      await api.delete(`/admin/orders/${id}`);
       fetchAdminData();
     } catch (e) {
       console.error(e);
@@ -242,7 +241,7 @@ const AdminDashboard = () => {
   const handleBannerSubmit = async (e) => {
     e.preventDefault();
     try {
-      await axios.post("http://localhost:5000/api/admin/banners", bannerForm);
+      await api.post("/admin/banners", bannerForm);
       setShowBannerModal(false);
       fetchAdminData();
     } catch (err) { alert("Error saving banner"); }
@@ -251,14 +250,14 @@ const AdminDashboard = () => {
   const deleteBanner = async (id) => {
     if (!window.confirm("Delete this banner?")) return;
     try {
-      await axios.delete(`http://localhost:5000/api/admin/banners/${id}`);
+      await api.delete(`/admin/banners/${id}`);
       fetchAdminData();
     } catch (e) { alert("Failed to delete banner"); }
   };
 
   const toggleBannerStatus = async (id, currentStatus) => {
     try {
-      await axios.patch(`http://localhost:5000/api/admin/banners/${id}/status`, { isActive: !currentStatus });
+      await api.patch(`/admin/banners/${id}/status`, { isActive: !currentStatus });
       fetchAdminData();
     } catch (e) { alert("Failed to update status"); }
   };
@@ -712,21 +711,21 @@ const AdminDashboard = () => {
 
       {/* Product Editor Modal */}
       {showProductModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 overflow-y-auto">
-          <div className="bg-white rounded-2xl w-full max-w-2xl shadow-2xl relative my-8">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4">
+          <div className="bg-white rounded-2xl w-full max-w-2xl shadow-2xl relative max-h-[90vh] flex flex-col">
             <button
               onClick={() => setShowProductModal(false)}
               className="absolute top-4 right-4 text-slate-400 hover:text-slate-800"
             >
               <X size={24} />
             </button>
-            <div className="p-6 border-b border-slate-100">
+            <div className="p-6 border-b border-slate-100 flex-shrink-0">
               <h2 className="text-2xl font-bold">
                 {editingProduct ? "Edit Product" : "Add New Product"}
               </h2>
             </div>
 
-            <form onSubmit={handleProductSubmit} className="p-6 space-y-4">
+            <form onSubmit={handleProductSubmit} className="p-6 space-y-4 overflow-y-auto">
               <div className="grid grid-cols-2 gap-4">
                 <div className="col-span-2">
                   <label className="block text-sm font-semibold mb-1">

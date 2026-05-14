@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
-import axios from "axios";
+import api from "../api/api";
 import {
   ArrowLeft,
   CheckCircle,
@@ -29,7 +29,7 @@ const ProductDetail = () => {
   useEffect(() => {
     const fetchProduct = async () => {
       try {
-        const res = await axios.get(`http://localhost:5000/api/products/${id}`);
+        const res = await api.get(`/products/${id}`);
         setProduct(res.data);
       } catch (err) {
         console.error(err);
@@ -45,10 +45,9 @@ const ProductDetail = () => {
     if (rating === 0) return alert("Please select a star rating");
     setSubmittingReview(true);
     try {
-      const res = await axios.post(
-        `http://localhost:5000/api/products/${id}/reviews`,
-        { rating, comment },
-        { headers: { Authorization: `Bearer ${user.token}` } },
+      const res = await api.post(
+        `/products/${id}/reviews`,
+        { rating, comment }
       );
       // Immediately append the review to UI without refreshing
       setProduct((prev) => ({

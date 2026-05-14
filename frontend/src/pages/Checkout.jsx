@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import api from '../api/api';
 import { CreditCard, Truck, Smartphone } from 'lucide-react';
 import useCartStore from '../store/cartStore';
 import { useAuth } from '../context/AuthContext';
@@ -39,7 +39,7 @@ const Checkout = () => {
         paymentMethod
       };
       
-      const res = await axios.post('http://localhost:5000/api/orders', orderData);
+      const res = await api.post('/orders', orderData);
       if (res.status === 201) {
         clearCart();
         alert('Order Placed Successfully!');

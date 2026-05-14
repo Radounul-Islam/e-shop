@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import axios from "axios";
+import api from "../api/api";
 import { ArrowRight, Star, TrendingUp } from "lucide-react";
 import useCartStore from "../store/cartStore";
 
@@ -15,17 +15,17 @@ const Home = () => {
     // We fetch trending and latest. If backend isn't ready, it handles gracefully.
     const fetchHomeData = async () => {
       try {
-        const trendRes = await axios.get(
-          "http://localhost:5000/api/products?trending=true",
+        const trendRes = await api.get(
+          "/products?trending=true",
         );
         setTrendingProducts(trendRes.data.slice(0, 4));
 
-        const latestRes = await axios.get(
-          "http://localhost:5000/api/products?latest=true",
+        const latestRes = await api.get(
+          "/products?latest=true",
         );
         setLatestProducts(latestRes.data.slice(0, 4));
 
-        const bannerRes = await axios.get("http://localhost:5000/api/banners");
+        const bannerRes = await api.get("/banners");
         setBanners(bannerRes.data);
       } catch (err) {
         console.error("Could not fetch products or banners", err);

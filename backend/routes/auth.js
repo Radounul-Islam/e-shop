@@ -3,6 +3,8 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { PrismaClient } = require('@prisma/client');
 
+const { sendOtpEmail } = require('../utils/emailSender');
+
 const router = express.Router();
 const prisma = new PrismaClient();
 
@@ -13,7 +15,7 @@ const generateToken = (id) => {
 };
 
 // [POST] /api/auth/request-otp
-// Mock endpoint to request an OTP (creates user if new, updates OTP if existing)
+// Request an OTP (creates user if new, updates OTP if existing)
 router.post('/request-otp', async (req, res) => {
   const { email, phone } = req.body;
   if (!email && !phone) return res.status(400).json({ message: 'Please provide email or phone' });
@@ -22,21 +24,31 @@ router.post('/request-otp', async (req, res) => {
     where: { OR: [{ email: email || '' }, { phone: phone || '' }] }
   });
 
-  const mockOtp = Math.floor(100000 + Math.random() * 900000).toString();
+  const otp = Math.floor(100000 + Math.random() * 900000).toString();
   
   if (user) {
     user = await prisma.user.update({
       where: { id: user.id },
-      data: { otp: mockOtp }
+      data: { otp }
     });
   } else {
     user = await prisma.user.create({
-      data: { email, phone, otp: mockOtp }
+      data: { email, phone, otp }
     });
   }
 
-  // In a real app we would send this via SMS/Email. Here we return so the mock frontend can autofill or display it.
-  res.status(200).json({ message: 'OTP sent successfully', otp: mockOtp, userId: user.id });
+  // Handle sending OTP
+  if (email) {
+    const emailSent = await sendOtpEmail(email, otp);
+    if (!emailSent) {
+      return res.status(500).json({ message: 'Failed to send OTP email' });
+    }
+    // For email, we don't send OTP in response for security
+    return res.status(200).json({ message: 'OTP sent to your email', userId: user.id });
+  } else if (phone) {
+    // For phone, as per your request, we send it to the frontend
+    return res.status(200).json({ message: 'OTP sent successfully', otp, userId: user.id });
+  }
 });
 
 // [POST] /api/auth/verify-otp

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../api/api';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { X } from 'lucide-react';
@@ -40,7 +40,7 @@ const AuthModal = ({ onClose }) => {
     e.preventDefault();
     try {
       const payload = method === 'email' ? { email: identifier } : { phone: identifier };
-      const res = await axios.post('http://localhost:5000/api/auth/request-otp', payload);
+      const res = await api.post('/auth/request-otp', payload);
       alert(`OTP Sent for testing: ${res.data.otp}`);
       setUserId(res.data.userId);
       setTimeLeft(60);
@@ -53,7 +53,7 @@ const AuthModal = ({ onClose }) => {
   const handleResendOtp = async () => {
     try {
       const payload = method === 'email' ? { email: identifier } : { phone: identifier };
-      const res = await axios.post('http://localhost:5000/api/auth/request-otp', payload);
+      const res = await api.post('/auth/request-otp', payload);
       alert(`New OTP Sent: ${res.data.otp}`);
       setTimeLeft(60);
     } catch (err) {
@@ -64,7 +64,7 @@ const AuthModal = ({ onClose }) => {
   const handleVerifyOtp = async (e) => {
     e.preventDefault();
     try {
-      const res = await axios.post('http://localhost:5000/api/auth/verify-otp', {
+      const res = await api.post('/auth/verify-otp', {
         userId,
         otp
       });

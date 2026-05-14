@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import axios from "axios";
+import api from "../api/api";
 import { Link } from "react-router-dom";
 import { Package, ExternalLink } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
@@ -18,7 +18,7 @@ const MyOrders = () => {
 
   const fetchOrders = async () => {
     try {
-      const res = await axios.get("http://localhost:5000/api/orders/myorders");
+      const res = await api.get("/orders/myorders");
       setOrders(res.data);
     } catch (err) {
       console.error(err);

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import axios from "axios";
+import api from "../api/api";
 import { Filter } from "lucide-react";
 import { Link } from "react-router-dom";
 import useCartStore from "../store/cartStore";
@@ -20,8 +20,8 @@ const Shop = () => {
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const res = await axios.get(
-          "http://localhost:5000/api/products/categories/all",
+        const res = await api.get(
+          "/products/categories/all",
         );
         setCategories(res.data);
       } catch (err) {
@@ -41,8 +41,8 @@ const Shop = () => {
         if (filters.maxPrice) query.append("maxPrice", filters.maxPrice);
         if (filters.latest) query.append("latest", "true");
 
-        const res = await axios.get(
-          `http://localhost:5000/api/products?${query.toString()}`,
+        const res = await api.get(
+          `/products?${query.toString()}`,
         );
         setProducts(res.data);
       } catch (err) {
