@@ -54,7 +54,10 @@ const useCartStore = create(
       clearCart: () => set({ items: [] }),
       getTotal: () => {
         const { items } = get();
-        return items.reduce((total, item) => total + item.product.price * item.quantity, 0);
+        return items.reduce((total, item) => {
+          const activePrice = item.product.discountPrice != null ? item.product.discountPrice : item.product.price;
+          return total + activePrice * item.quantity;
+        }, 0);
       },
     }),
     {

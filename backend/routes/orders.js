@@ -24,11 +24,12 @@ router.post('/', protect, async (req, res) => {
           if (product.stock < item.quantity) {
              return res.status(400).json({ message: `Not enough stock for ${product.name}` });
           }
-          totalAmount += (product.price * item.quantity);
+          const activePrice = product.discountPrice != null ? parseFloat(product.discountPrice) : parseFloat(product.price);
+          totalAmount += (activePrice * item.quantity);
           formattedItems.push({
             productId: product.id,
             quantity: item.quantity,
-            price: product.price
+            price: activePrice
           });
 
           // Deduct stock simultaneously

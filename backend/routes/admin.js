@@ -12,6 +12,11 @@ router.post('/products', async (req, res) => {
   try {
     const data = { ...req.body };
     if (data.price !== undefined) data.price = parseFloat(data.price);
+    if (data.discountPrice !== undefined && data.discountPrice !== "") {
+      data.discountPrice = parseFloat(data.discountPrice);
+    } else {
+      data.discountPrice = null;
+    }
     if (data.stock !== undefined) data.stock = parseInt(data.stock, 10);
     
     const product = await prisma.product.create({ data });
@@ -25,6 +30,11 @@ router.put('/products/:id', async (req, res) => {
   try {
     const data = { ...req.body };
     if (data.price !== undefined) data.price = parseFloat(data.price);
+    if (data.discountPrice !== undefined && data.discountPrice !== "") {
+      data.discountPrice = parseFloat(data.discountPrice);
+    } else {
+      data.discountPrice = null;
+    }
     if (data.stock !== undefined) data.stock = parseInt(data.stock, 10);
     
     const product = await prisma.product.update({
@@ -113,6 +123,50 @@ router.delete('/orders/:id', async (req, res) => {
     res.json({ message: 'Order removed' });
   } catch (error) {
     res.status(500).json({ message: 'Error deleting order' });
+  }
+});
+
+// --- Banners Management ---
+router.get('/banners', async (req, res) => {
+  try {
+    const banners = await prisma.banner.findMany({ orderBy: { createdAt: 'desc' } });
+    res.json(banners);
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching banners' });
+  }
+});
+
+router.post('/banners', async (req, res) => {
+  try {
+    const { imageUrl, isActive } = req.body;
+    const banner = await prisma.banner.create({
+      data: { imageUrl, isActive: isActive !== undefined ? isActive : true }
+    });
+    res.status(201).json(banner);
+  } catch (error) {
+    res.status(500).json({ message: 'Error creating banner' });
+  }
+});
+
+router.patch('/banners/:id/status', async (req, res) => {
+  try {
+    const { isActive } = req.body;
+    const banner = await prisma.banner.update({
+      where: { id: req.params.id },
+      data: { isActive }
+    });
+    res.json(banner);
+  } catch (error) {
+    res.status(500).json({ message: 'Error updating banner status' });
+  }
+});
+
+router.delete('/banners/:id', async (req, res) => {
+  try {
+    await prisma.banner.delete({ where: { id: req.params.id } });
+    res.json({ message: 'Banner removed' });
+  } catch (error) {
+    res.status(500).json({ message: 'Error deleting banner' });
   }
 });
 

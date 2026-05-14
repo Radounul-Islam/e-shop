@@ -58,6 +58,7 @@ model Product {
   name        String
   description String
   price       Float
+  discountPrice Float?
   stock       Int         @default(10)
   imageUrl    String?
   isTrending  Boolean     @default(false)
@@ -102,5 +103,13 @@ model Review {
   userId    String
   user      User     @relation(fields: [userId], references: [id])
   createdAt DateTime @default(now())
+}
+
+model Banner {
+  id          String   @id @default(uuid())
+  imageUrl    String
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
 

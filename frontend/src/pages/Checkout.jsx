@@ -134,7 +134,7 @@ const Checkout = () => {
           </div>
 
           <button type="submit" className="btn-primary w-full py-4 text-lg mt-6 shadow-xl">
-             Confirm Order (${getTotal().toFixed(2)})
+             Confirm Order (৳{getTotal().toFixed(2)})
           </button>
         </form>
 
@@ -142,16 +142,19 @@ const Checkout = () => {
           <div className="card p-6 sticky top-24 bg-slate-50 border-none shadow-inner">
             <h3 className="font-bold text-lg mb-4 border-b pb-2">Order Items</h3>
             <div className="space-y-3 max-h-60 overflow-y-auto pr-2">
-               {items.map(i => (
-                 <div key={i.product.id} className="flex justify-between text-sm">
-                   <span className="truncate pr-2">{i.quantity} x {i.product.name}</span>
-                   <span className="font-semibold">${(i.product.price * i.quantity).toFixed(2)}</span>
-                 </div>
-               ))}
+               {items.map(i => {
+                 const activePrice = i.product.discountPrice != null ? i.product.discountPrice : i.product.price;
+                 return (
+                   <div key={i.product.id} className="flex justify-between text-sm">
+                     <span className="truncate pr-2">{i.quantity} x {i.product.name}</span>
+                     <span className="font-semibold">৳{(activePrice * i.quantity).toFixed(2)}</span>
+                   </div>
+                 );
+               })}
             </div>
             <div className="border-t mt-4 pt-4 flex justify-between font-bold text-lg">
                <span>Total</span>
-               <span className="text-primary-600">${getTotal().toFixed(2)}</span>
+               <span className="text-primary-600">৳{getTotal().toFixed(2)}</span>
             </div>
           </div>
         </aside>
