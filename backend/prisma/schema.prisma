@@ -6,9 +6,8 @@ generator client {
 }
 
 datasource db {
-  provider  = "postgresql"
-  url       = env("DATABASE_URL")
-  directUrl = env("DIRECT_URL")
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 // Enums
@@ -42,6 +41,8 @@ model User {
   role      Role      @default(USER)
   orders    Order[]
   reviews   Review[]
+  hasCompletedProfessionSetup Boolean      @default(false)
+  professions                 Profession[]
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
 }
@@ -55,20 +56,21 @@ model Category {
 }
 
 model Product {
-  id          String      @id @default(uuid())
-  name        String
-  description String
-  price       Float
+  id            String       @id @default(uuid())
+  name          String
+  description   String
+  price         Float
   discountPrice Float?
-  stock       Int         @default(10)
-  imageUrl    String?
-  isTrending  Boolean     @default(false)
-  categoryId  String
-  category    Category    @relation(fields: [categoryId], references: [id])
-  orderItems  OrderItem[]
-  reviews     Review[]
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
+  stock         Int          @default(10)
+  imageUrl      String?
+  isTrending    Boolean      @default(false)
+  categoryId    String
+  category      Category     @relation(fields: [categoryId], references: [id])
+  orderItems    OrderItem[]
+  reviews       Review[]
+  professions   Profession[]
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
 }
 
 model Order {
@@ -112,5 +114,14 @@ model Banner {
   isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+}
+
+model Profession {
+  id        String    @id @default(uuid())
+  name      String    @unique
+  users     User[]
+  products  Product[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
 }
 

@@ -31,8 +31,41 @@ router.get('/', async (req, res) => {
     const products = await prisma.product.findMany({
       where,
       orderBy,
-      include: { category: true }
+      include: {
+        category: true,
+        professions: true
+      }
     });
+
+    // Optional personalization sorting based on customer professions
+    let userProfessions = [];
+    if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
+      try {
+        const token = req.headers.authorization.split(' ')[1];
+        const jwt = require('jsonwebtoken');
+        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback_secret');
+        const user = await prisma.user.findUnique({
+          where: { id: decoded.id },
+          include: { professions: true }
+        });
+        if (user) {
+          userProfessions = user.professions.map(p => p.id);
+        }
+      } catch (error) {
+        console.error('Optional auth verification failed during product listing:', error.message);
+      }
+    }
+
+    if (userProfessions.length > 0) {
+      products.sort((a, b) => {
+        const aMatches = a.professions.some(p => userProfessions.includes(p.id));
+        const bMatches = b.professions.some(p => userProfessions.includes(p.id));
+        if (aMatches && !bMatches) return -1;
+        if (!aMatches && bMatches) return 1;
+        return 0; // Maintain original sorting
+      });
+    }
+
     res.json(products);
   } catch (error) {
     console.error(error);
@@ -47,6 +80,7 @@ router.get('/:id', async (req, res) => {
       where: { id: req.params.id },
       include: { 
         category: true,
+        professions: true,
         reviews: { 
           include: { user: { select: { email: true, phone: true } } },
           orderBy: { createdAt: 'desc' }

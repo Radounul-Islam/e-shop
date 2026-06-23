@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import useUiStore from './uiStore';
 
 const useCartStore = create(
   persist(
@@ -10,13 +11,13 @@ const useCartStore = create(
         const existingItem = items.find((item) => item.product.id === product.id);
         
         if (product.stock === 0) {
-          alert(`Sorry, ${product.name} is currently out of stock.`);
+          useUiStore.getState().addToast(`Sorry, ${product.name} is currently out of stock.`, 'warning');
           return;
         }
 
         if (existingItem) {
           if (existingItem.quantity >= product.stock) {
-            alert(`You cannot add more than ${product.stock} items of ${product.name}`);
+            useUiStore.getState().addToast(`You cannot add more than ${product.stock} items of ${product.name}`, 'warning');
             return;
           }
           set({
@@ -28,11 +29,13 @@ const useCartStore = create(
           });
         } else {
           set({ items: [...items, { product, quantity: 1 }] });
+          useUiStore.getState().addToast(`Added ${product.name} to cart!`, 'success');
         }
       },
       removeItem: (productId) => {
         const { items } = get();
         set({ items: items.filter((item) => item.product.id !== productId) });
+        useUiStore.getState().addToast('Removed item from cart.', 'info');
       },
       updateQuantity: (productId, quantity) => {
         const { items } = get();
@@ -41,7 +44,7 @@ const useCartStore = create(
         if (!existingItem) return;
         if (quantity < 1) return;
         if (quantity > existingItem.product.stock) {
-          alert(`You cannot add more than ${existingItem.product.stock} items of ${existingItem.product.name}`);
+          useUiStore.getState().addToast(`You cannot add more than ${existingItem.product.stock} items of ${existingItem.product.name}`, 'warning');
           return;
         }
 

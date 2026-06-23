@@ -10,12 +10,15 @@ import {
   Edit,
   Trash2,
   Image,
+  Briefcase,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import useUiStore from "../store/uiStore";
 
 const AdminDashboard = () => {
   const { user, login, logout } = useAuth();
   const navigate = useNavigate();
+  const { addToast, showConfirm } = useUiStore();
 
   const [adminEmail, setAdminEmail] = useState("");
   const [adminPass, setAdminPass] = useState("");
@@ -26,6 +29,7 @@ const AdminDashboard = () => {
     categories: [],
     orders: [],
     banners: [],
+    professions: [],
   });
 
   // Modal State
@@ -40,12 +44,18 @@ const AdminDashboard = () => {
     categoryId: "",
     imageUrl: "",
     isTrending: false,
+    professionIds: [],
   });
 
   // Category Modal State
   const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [editingCategory, setEditingCategory] = useState(null);
   const [categoryForm, setCategoryForm] = useState({ name: "" });
+
+  // Profession Modal State
+  const [showProfessionModal, setShowProfessionModal] = useState(false);
+  const [editingProfession, setEditingProfession] = useState(null);
+  const [professionForm, setProfessionForm] = useState({ name: "" });
 
   // Order Details Modal State
   const [viewingOrder, setViewingOrder] = useState(null);
@@ -70,13 +80,20 @@ const AdminDashboard = () => {
         { email: adminEmail, password: adminPass },
       );
       login(res.data);
+      addToast("Successfully authenticated as admin.", "success");
     } catch (err) {
-      alert("Invalid admin credentials");
+      addToast("Invalid admin credentials", "error");
     }
   };
 
   useEffect(() => {
-    if (user?.role === "ADMIN") fetchAdminData();
+    if (user?.role === "ADMIN") {
+      fetchAdminData();
+      // always fetch professions for product tagging checkboxes
+      api.get("/professions").then(res => {
+        setData(p => ({ ...p, professions: res.data }));
+      }).catch(err => console.error(err));
+    }
   }, [user, activeTab]);
 
   const fetchAdminData = async () => {
@@ -95,6 +112,9 @@ const AdminDashboard = () => {
       } else if (activeTab === "banners") {
         const res = await api.get("/admin/banners");
         setData((p) => ({ ...p, banners: res.data }));
+      } else if (activeTab === "professions") {
+        const res = await api.get("/professions");
+        setData((p) => ({ ...p, professions: res.data }));
       }
     } catch (err) {
       console.error(err);
@@ -110,28 +130,34 @@ const AdminDashboard = () => {
           `/admin/products/${editingProduct.id}`,
           productForm,
         );
+        addToast("Product updated successfully.", "success");
       } else {
         await api.post(
           "/admin/products",
           productForm,
         );
+        addToast("Product created successfully.", "success");
       }
       setShowProductModal(false);
       fetchAdminData();
     } catch (err) {
-      alert("Error saving product");
+      addToast("Error saving product", "error");
     }
   };
 
   const deleteProduct = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this product?"))
-      return;
+    const isConfirmed = await showConfirm({
+      title: "Delete Product",
+      message: "Are you sure you want to delete this product?"
+    });
+    if (!isConfirmed) return;
     try {
       await api.delete(`/admin/products/${id}`);
+      addToast("Product deleted successfully.", "success");
       fetchAdminData();
     } catch (e) {
       console.error(e);
-      alert("Failed to delete");
+      addToast("Failed to delete product.", "error");
     }
   };
 
@@ -147,6 +173,7 @@ const AdminDashboard = () => {
         categoryId: product.categoryId,
         imageUrl: product.imageUrl || "",
         isTrending: product.isTrending,
+        professionIds: product.professions ? product.professions.map(p => p.id) : []
       });
     } else {
       setEditingProduct(null);
@@ -159,6 +186,7 @@ const AdminDashboard = () => {
         categoryId: data.categories[0]?.id || "",
         imageUrl: "",
         isTrending: false,
+        professionIds: []
       });
     }
     setShowProductModal(true);
@@ -173,32 +201,34 @@ const AdminDashboard = () => {
           `/admin/categories/${editingCategory.id}`,
           categoryForm,
         );
+        addToast("Category updated successfully.", "success");
       } else {
         await api.post(
           "/admin/categories",
           categoryForm,
         );
+        addToast("Category created successfully.", "success");
       }
       setShowCategoryModal(false);
       fetchAdminData();
     } catch (err) {
-      alert("Error saving category");
+      addToast("Error saving category", "error");
     }
   };
 
   const deleteCategory = async (id) => {
-    if (
-      !window.confirm(
-        "Are you sure you want to delete this category? Ensure no products are linked to it.",
-      )
-    )
-      return;
+    const isConfirmed = await showConfirm({
+      title: "Delete Category",
+      message: "Are you sure you want to delete this category? Ensure no products are linked to it."
+    });
+    if (!isConfirmed) return;
     try {
       await api.delete(`/admin/categories/${id}`);
+      addToast("Category deleted successfully.", "success");
       fetchAdminData();
     } catch (e) {
       console.error(e);
-      alert("Failed to delete category (it may have products attached).");
+      addToast("Failed to delete category (it may have products attached).", "error");
     }
   };
 
@@ -213,27 +243,77 @@ const AdminDashboard = () => {
     setShowCategoryModal(true);
   };
 
+  // --- Profession CRUD ---
+  const handleProfessionSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      if (editingProfession) {
+        await api.put(`/admin/professions/${editingProfession.id}`, professionForm);
+        addToast("Profession updated successfully.", "success");
+      } else {
+        await api.post("/admin/professions", professionForm);
+        addToast("Profession created successfully.", "success");
+      }
+      setShowProfessionModal(false);
+      fetchAdminData();
+    } catch (err) {
+      addToast(err.response?.data?.message || "Error saving profession", "error");
+    }
+  };
+
+  const deleteProfession = async (id) => {
+    const isConfirmed = await showConfirm({
+      title: "Delete Profession",
+      message: "Are you sure you want to delete this profession? It may be linked to products or users."
+    });
+    if (!isConfirmed) return;
+    try {
+      await api.delete(`/admin/professions/${id}`);
+      addToast("Profession removed.", "success");
+      fetchAdminData();
+    } catch (e) {
+      console.error(e);
+      addToast("Failed to delete profession.", "error");
+    }
+  };
+
+  const openProfessionModal = (profession = null) => {
+    if (profession) {
+      setEditingProfession(profession);
+      setProfessionForm({ name: profession.name });
+    } else {
+      setEditingProfession(null);
+      setProfessionForm({ name: "" });
+    }
+    setShowProfessionModal(true);
+  };
+
   // --- Order Status & details ---
   const changeOrderStatus = async (id, status) => {
     try {
       await api.patch(`/admin/orders/${id}/status`, {
         status,
       });
+      addToast("Order status updated successfully.", "success");
       fetchAdminData();
     } catch (e) {
-      alert("Failed to update status");
+      addToast("Failed to update status", "error");
     }
   };
 
   const handleDeleteOrder = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this order entirely?"))
-      return;
+    const isConfirmed = await showConfirm({
+      title: "Delete Order",
+      message: "Are you sure you want to delete this order entirely?"
+    });
+    if (!isConfirmed) return;
     try {
       await api.delete(`/admin/orders/${id}`);
+      addToast("Order removed successfully.", "success");
       fetchAdminData();
     } catch (e) {
       console.error(e);
-      alert("Failed to delete order");
+      addToast("Failed to delete order", "error");
     }
   };
 
@@ -243,23 +323,36 @@ const AdminDashboard = () => {
     try {
       await api.post("/admin/banners", bannerForm);
       setShowBannerModal(false);
+      addToast("Banner added successfully.", "success");
       fetchAdminData();
-    } catch (err) { alert("Error saving banner"); }
+    } catch (err) {
+      addToast("Error saving banner", "error");
+    }
   };
 
   const deleteBanner = async (id) => {
-    if (!window.confirm("Delete this banner?")) return;
+    const isConfirmed = await showConfirm({
+      title: "Delete Banner",
+      message: "Delete this banner?"
+    });
+    if (!isConfirmed) return;
     try {
       await api.delete(`/admin/banners/${id}`);
+      addToast("Banner removed.", "success");
       fetchAdminData();
-    } catch (e) { alert("Failed to delete banner"); }
+    } catch (e) {
+      addToast("Failed to delete banner", "error");
+    }
   };
 
   const toggleBannerStatus = async (id, currentStatus) => {
     try {
       await api.patch(`/admin/banners/${id}/status`, { isActive: !currentStatus });
+      addToast("Banner status toggled.", "success");
       fetchAdminData();
-    } catch (e) { alert("Failed to update status"); }
+    } catch (e) {
+      addToast("Failed to update status", "error");
+    }
   };
 
   const handleOrderSort = (field) => {
@@ -411,6 +504,12 @@ const AdminDashboard = () => {
             <List size={20} /> Categories
           </button>
           <button
+            onClick={() => setActiveTab("professions")}
+            className={`flex-shrink-0 md:w-full flex items-center gap-2 md:gap-3 px-4 py-2.5 md:py-3 rounded-xl transition-colors font-medium text-sm md:text-base ${activeTab === "professions" ? "bg-primary-600 text-white" : "text-slate-400 hover:bg-slate-800 hover:text-white"}`}
+          >
+            <Briefcase size={20} /> Professions
+          </button>
+          <button
             onClick={() => setActiveTab("orders")}
             className={`flex-shrink-0 md:w-full flex items-center gap-2 md:gap-3 px-4 py-2.5 md:py-3 rounded-xl transition-colors font-medium text-sm md:text-base ${activeTab === "orders" ? "bg-primary-600 text-white" : "text-slate-400 hover:bg-slate-800 hover:text-white"}`}
           >
@@ -446,6 +545,14 @@ const AdminDashboard = () => {
                 className="btn-primary py-2 flex items-center gap-2"
               >
                 Add New Category
+              </button>
+            )}
+            {activeTab === "professions" && (
+              <button
+                onClick={() => openProfessionModal()}
+                className="btn-primary py-2 flex items-center gap-2"
+              >
+                Add New Profession
               </button>
             )}
             {activeTab === "banners" && (
@@ -559,6 +666,13 @@ const AdminDashboard = () => {
                       <th className="p-4 text-right">Actions</th>
                     </>
                   )}
+                  {activeTab === "professions" && (
+                    <>
+                      <th className="p-4">Profession Name</th>
+                      <th className="p-4">ID</th>
+                      <th className="p-4 text-right">Actions</th>
+                    </>
+                  )}
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -602,6 +716,29 @@ const AdminDashboard = () => {
                         </button>
                         <button
                           onClick={() => deleteProduct(p.id)}
+                          className="text-red-500 hover:text-red-700"
+                        >
+                          <Trash2 size={18} />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                {activeTab === "professions" &&
+                  data.professions.map((prof) => (
+                    <tr key={prof.id} className="hover:bg-slate-50">
+                      <td className="p-4 font-bold flex items-center gap-2">
+                        <span className="bg-primary-100 text-primary-700 px-3 py-1 rounded-full text-sm font-semibold">{prof.name}</span>
+                      </td>
+                      <td className="p-4 text-slate-400 text-sm font-mono">{prof.id}</td>
+                      <td className="p-4 text-right flex justify-end gap-3">
+                        <button
+                          onClick={() => openProfessionModal(prof)}
+                          className="text-blue-500 hover:text-blue-700"
+                        >
+                          <Edit size={18} />
+                        </button>
+                        <button
+                          onClick={() => deleteProfession(prof.id)}
                           className="text-red-500 hover:text-red-700"
                         >
                           <Trash2 size={18} />
@@ -858,6 +995,44 @@ const AdminDashboard = () => {
                     </span>
                   </label>
                 </div>
+
+                {/* Profession Tagging */}
+                {data.professions.length > 0 && (
+                  <div className="col-span-2 mt-2">
+                    <label className="block text-sm font-semibold mb-2 text-slate-700 flex items-center gap-2">
+                      <Briefcase size={15} className="text-primary-600" />
+                      Tag by Profession (for personalized sorting)
+                    </label>
+                    <div className="grid grid-cols-2 gap-2 max-h-36 overflow-y-auto border border-slate-200 rounded-xl p-3 bg-slate-50/50">
+                      {data.professions.map((prof) => {
+                        const isChecked = productForm.professionIds.includes(prof.id);
+                        return (
+                          <label
+                            key={prof.id}
+                            className={`flex items-center gap-2 p-2 rounded-lg border cursor-pointer transition-all text-sm font-semibold select-none ${
+                              isChecked
+                                ? "border-primary-400 bg-primary-50 text-primary-700"
+                                : "border-slate-200 bg-white text-slate-600 hover:border-primary-200"
+                            }`}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={isChecked}
+                              onChange={() => {
+                                const updated = isChecked
+                                  ? productForm.professionIds.filter((id) => id !== prof.id)
+                                  : [...productForm.professionIds, prof.id];
+                                setProductForm({ ...productForm, professionIds: updated });
+                              }}
+                              className="rounded border-slate-300 text-primary-600 focus:ring-primary-500 w-4 h-4 cursor-pointer"
+                            />
+                            {prof.name}
+                          </label>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className="flex justify-end gap-3 mt-8 pt-4 border-t border-slate-100">
@@ -919,6 +1094,62 @@ const AdminDashboard = () => {
                 </button>
                 <button type="submit" className="btn-primary">
                   {editingCategory ? "Save Changes" : "Create Category"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Profession Editor Modal */}
+      {showProfessionModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-md p-4 animate-fade-in-fast">
+          <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl relative animate-scale-in">
+            <button
+              onClick={() => setShowProfessionModal(false)}
+              className="absolute top-4 right-4 text-slate-400 hover:text-slate-800 transition-colors"
+            >
+              <X size={24} />
+            </button>
+            <div className="blue-gradient p-6 rounded-t-2xl">
+              <div className="flex items-center gap-3 text-white">
+                <Briefcase size={24} />
+                <h2 className="text-xl font-bold">
+                  {editingProfession ? "Edit Profession" : "Add New Profession"}
+                </h2>
+              </div>
+              <p className="text-primary-100 text-xs mt-1 font-semibold">
+                This will appear as a checklist option for customers on login
+              </p>
+            </div>
+
+            <form onSubmit={handleProfessionSubmit} className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-semibold mb-1 text-slate-700">
+                  Profession Name
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Software Engineer, Doctor, Teacher..."
+                  className="w-full border border-slate-200 rounded-xl p-3 outline-none focus:ring-2 focus:ring-primary-500 transition-all font-medium"
+                  value={professionForm.name}
+                  onChange={(e) =>
+                    setProfessionForm({ ...professionForm, name: e.target.value })
+                  }
+                />
+              </div>
+
+              <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setShowProfessionModal(false)}
+                  className="px-5 py-2.5 font-semibold text-slate-500 hover:bg-slate-100 rounded-xl transition-colors"
+                >
+                  Cancel
+                </button>
+                <button type="submit" className="btn-primary py-2.5 px-6">
+                  {editingProfession ? "Save Changes" : "Create Profession"}
                 </button>
               </div>
             </form>

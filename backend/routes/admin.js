@@ -10,7 +10,8 @@ router.use(protect, admin);
 // --- Products Management ---
 router.post('/products', async (req, res) => {
   try {
-    const data = { ...req.body };
+    const { professionIds, ...rest } = req.body;
+    const data = { ...rest };
     if (data.price !== undefined) data.price = parseFloat(data.price);
     if (data.discountPrice !== undefined && data.discountPrice !== "") {
       data.discountPrice = parseFloat(data.discountPrice);
@@ -19,7 +20,16 @@ router.post('/products', async (req, res) => {
     }
     if (data.stock !== undefined) data.stock = parseInt(data.stock, 10);
     
-    const product = await prisma.product.create({ data });
+    if (professionIds) {
+      data.professions = {
+        connect: professionIds.map(id => ({ id }))
+      };
+    }
+    
+    const product = await prisma.product.create({
+      data,
+      include: { professions: true }
+    });
     res.status(201).json(product);
   } catch (error) {
     res.status(500).json({ message: 'Error creating product', error });
@@ -28,7 +38,8 @@ router.post('/products', async (req, res) => {
 
 router.put('/products/:id', async (req, res) => {
   try {
-    const data = { ...req.body };
+    const { professionIds, ...rest } = req.body;
+    const data = { ...rest };
     if (data.price !== undefined) data.price = parseFloat(data.price);
     if (data.discountPrice !== undefined && data.discountPrice !== "") {
       data.discountPrice = parseFloat(data.discountPrice);
@@ -37,9 +48,16 @@ router.put('/products/:id', async (req, res) => {
     }
     if (data.stock !== undefined) data.stock = parseInt(data.stock, 10);
     
+    if (professionIds) {
+      data.professions = {
+        set: professionIds.map(id => ({ id }))
+      };
+    }
+    
     const product = await prisma.product.update({
       where: { id: req.params.id },
-      data
+      data,
+      include: { professions: true }
     });
     res.json(product);
   } catch (error) {
@@ -167,6 +185,43 @@ router.delete('/banners/:id', async (req, res) => {
     res.json({ message: 'Banner removed' });
   } catch (error) {
     res.status(500).json({ message: 'Error deleting banner' });
+  }
+});
+
+// --- Professions Management ---
+router.post('/professions', async (req, res) => {
+  const { name } = req.body;
+  if (!name) return res.status(400).json({ message: 'Profession name is required' });
+  try {
+    const existing = await prisma.profession.findUnique({ where: { name } });
+    if (existing) return res.status(400).json({ message: 'Profession name already exists' });
+    const profession = await prisma.profession.create({ data: { name } });
+    res.status(201).json(profession);
+  } catch (error) {
+    res.status(500).json({ message: 'Error creating profession', error });
+  }
+});
+
+router.put('/professions/:id', async (req, res) => {
+  const { name } = req.body;
+  if (!name) return res.status(400).json({ message: 'Profession name is required' });
+  try {
+    const profession = await prisma.profession.update({
+      where: { id: req.params.id },
+      data: { name }
+    });
+    res.json(profession);
+  } catch (error) {
+    res.status(500).json({ message: 'Error updating profession', error });
+  }
+});
+
+router.delete('/professions/:id', async (req, res) => {
+  try {
+    await prisma.profession.delete({ where: { id: req.params.id } });
+    res.json({ message: 'Profession removed' });
+  } catch (error) {
+    res.status(500).json({ message: 'Error deleting profession. It may be in use by products or users.' });
   }
 });
 

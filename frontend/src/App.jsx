@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { Routes, Route, Link } from "react-router-dom";
 import {
   ShoppingCart,
@@ -22,6 +22,8 @@ import Checkout from "./pages/Checkout";
 import AdminDashboard from "./pages/AdminDashboard";
 import AuthModal from "./components/AuthModal";
 import MyOrders from "./pages/MyOrders";
+import UINotificationRenderer from "./components/UINotificationRenderer";
+import UserProfessionModal from "./components/UserProfessionModal";
 
 const Navbar = () => {
   const { items } = useCartStore();
@@ -192,6 +194,8 @@ function App() {
       <footer className="bg-slate-900 text-slate-400 py-8 text-center mt-12">
         <p>&copy; 2026 E-Shop. All rights reserved.</p>
       </footer>
+      <UINotificationRenderer />
+      <UserProfessionModal />
     </div>
   );
 }

@@ -5,11 +5,13 @@ import { CreditCard, Truck, Smartphone } from 'lucide-react';
 import useCartStore from '../store/cartStore';
 import { useAuth } from '../context/AuthContext';
 import AuthModal from '../components/AuthModal';
+import useUiStore from '../store/uiStore';
 
 const Checkout = () => {
   const { items, getTotal, clearCart } = useCartStore();
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { addToast } = useUiStore();
 
   const [addressObj, setAddressObj] = useState({
     street: '',
@@ -28,7 +30,8 @@ const Checkout = () => {
   const handlePlaceOrder = async (e) => {
     e.preventDefault();
     if (!addressObj.street || !addressObj.city || !addressObj.zip || !addressObj.country) {
-      return alert('Please fill in all required delivery address fields (state is optional)');
+      addToast('Please fill in all required delivery address fields (state is optional)', 'warning');
+      return;
     }
     
     try {
@@ -42,12 +45,12 @@ const Checkout = () => {
       const res = await api.post('/orders', orderData);
       if (res.status === 201) {
         clearCart();
-        alert('Order Placed Successfully!');
+        addToast('Order Placed Successfully!', 'success');
         navigate('/shop');
       }
     } catch (err) {
       console.error(err);
-      alert('Failed to place order.');
+      addToast('Failed to place order.', 'error');
     }
   };
 

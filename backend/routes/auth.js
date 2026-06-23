@@ -55,7 +55,10 @@ router.post('/request-otp', async (req, res) => {
 router.post('/verify-otp', async (req, res) => {
   const { userId, otp } = req.body;
   
-  const user = await prisma.user.findUnique({ where: { id: userId } });
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    include: { professions: true }
+  });
   if (!user || user.otp !== otp) {
     return res.status(400).json({ message: 'Invalid OTP' });
   }
@@ -71,6 +74,8 @@ router.post('/verify-otp', async (req, res) => {
     email: user.email,
     phone: user.phone,
     role: user.role,
+    hasCompletedProfessionSetup: user.hasCompletedProfessionSetup,
+    professions: user.professions,
     token: generateToken(user.id)
   });
 });

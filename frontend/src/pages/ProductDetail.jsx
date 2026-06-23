@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import useCartStore from "../store/cartStore";
 import { useAuth } from "../context/AuthContext";
+import useUiStore from "../store/uiStore";
 
 const ProductDetail = () => {
   const { id } = useParams();
@@ -19,6 +20,7 @@ const ProductDetail = () => {
 
   const { addItem } = useCartStore();
   const { user } = useAuth();
+  const { addToast } = useUiStore();
 
   // Review Form State
   const [rating, setRating] = useState(0);
@@ -42,7 +44,10 @@ const ProductDetail = () => {
 
   const handleReviewSubmit = async (e) => {
     e.preventDefault();
-    if (rating === 0) return alert("Please select a star rating");
+    if (rating === 0) {
+      addToast("Please select a star rating", "warning");
+      return;
+    }
     setSubmittingReview(true);
     try {
       const res = await api.post(
@@ -56,9 +61,9 @@ const ProductDetail = () => {
       }));
       setRating(0);
       setComment("");
-      alert("Review successfully posted!");
+      addToast("Review successfully posted!", "success");
     } catch (err) {
-      alert(err.response?.data?.message || "Error posting review");
+      addToast(err.response?.data?.message || "Error posting review", "error");
     } finally {
       setSubmittingReview(false);
     }

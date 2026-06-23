@@ -4,6 +4,8 @@ import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { X } from 'lucide-react';
 
+import useUiStore from '../store/uiStore';
+
 const AuthModal = ({ onClose }) => {
   const [tab, setTab] = useState('login'); // login | register | otp
   const [method, setMethod] = useState('email'); // email | phone
@@ -14,6 +16,7 @@ const AuthModal = ({ onClose }) => {
 
   const { login, user } = useAuth();
   const navigate = useNavigate();
+  const { addToast, showAlert } = useUiStore();
 
   useEffect(() => {
     let interval;
@@ -41,12 +44,12 @@ const AuthModal = ({ onClose }) => {
     try {
       const payload = method === 'email' ? { email: identifier } : { phone: identifier };
       const res = await api.post('/auth/request-otp', payload);
-      alert(`OTP Sent for testing: ${res.data.otp}`);
+      showAlert({ title: 'OTP Sent (Testing)', message: `Your test OTP code is: ${res.data.otp}` });
       setUserId(res.data.userId);
       setTimeLeft(60);
       setTab('otp');
     } catch (err) {
-      alert(err.response?.data?.message || 'Error requesting OTP');
+      addToast(err.response?.data?.message || 'Error requesting OTP', 'error');
     }
   };
 
@@ -54,10 +57,10 @@ const AuthModal = ({ onClose }) => {
     try {
       const payload = method === 'email' ? { email: identifier } : { phone: identifier };
       const res = await api.post('/auth/request-otp', payload);
-      alert(`New OTP Sent: ${res.data.otp}`);
+      showAlert({ title: 'New OTP Sent (Testing)', message: `Your new test OTP code is: ${res.data.otp}` });
       setTimeLeft(60);
     } catch (err) {
-      alert('Error resending OTP');
+      addToast('Error resending OTP', 'error');
     }
   };
 
@@ -72,7 +75,7 @@ const AuthModal = ({ onClose }) => {
       if (onClose) onClose();
       else navigate('/');
     } catch (err) {
-      alert('Invalid OTP');
+      addToast('Invalid OTP code', 'error');
     }
   };
 
